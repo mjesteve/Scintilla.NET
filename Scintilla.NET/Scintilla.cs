@@ -209,6 +209,10 @@ public class Scintilla : Control
     private static readonly object indicatorClickEventKey = new();
     private static readonly object indicatorReleaseEventKey = new();
     private static readonly object zoomChangedEventKey = new();
+    // [IEST] Clave del evento FilesDropped. Sigue el mismo patrón que el resto de eventos
+    // del control (charAddedEventKey, doubleClickEventKey, etc.) usando el sistema
+    // de Events heredado de Control para evitar un campo delegate por cada evento.
+    private static readonly object filesDroppedEventKey = new();
 
     // The goods
     private IntPtr sciPtr;
@@ -2148,6 +2152,12 @@ public class Scintilla : Control
             PInvoke.RevokeDragDrop((HWND)Handle);
 
         base.OnHandleCreated(e);
+
+        // [IEST] Si AcceptFileDrop está activo, registramos el HWND para recibir
+        // WM_DROPFILES. Debe ir tras base.OnHandleCreated para que el handle esté
+        // completamente inicializado por WinForms antes de llamar a DragAcceptFiles.
+        if (_acceptFileDrop)
+            NativeMethods.DragAcceptFiles(Handle, true);
     }
 
     /// <summary>
@@ -3469,10 +3479,35 @@ public class Scintilla : Control
                 WmDestroy(ref m);
                 break;
 
+            // [IEST] Interceptamos WM_DROPFILES para exponer el evento FilesDropped.
+            // Este mensaje solo llega si AcceptFileDrop=true (DragAcceptFiles fue llamado)
+            // y el Shell lo envía porque el IDropTarget activo rechazó el CF_HDROP.
+            case NativeMethods.WM_DROPFILES:
+                WmDropFiles(ref m);
+                break;
+
             default:
                 base.WndProc(ref m);
                 break;
         }
+    }
+
+    // [IEST] Procesa WM_DROPFILES: extrae los nombres de fichero del handle HDROP,
+    // libera el handle y dispara el evento FilesDropped con la lista resultante.
+    // wParam del mensaje contiene el HDROP; no hay que pasar el mensaje a DefWndProc.
+    private void WmDropFiles(ref Message m)
+    {
+        var hDrop = m.WParam;
+        var count = NativeMethods.DragQueryFile(hDrop, 0xFFFFFFFFu, null, 0);
+        var files = new string[count];
+        var sb = new System.Text.StringBuilder(260);
+        for (uint i = 0; i < count; i++)
+        {
+            NativeMethods.DragQueryFile(hDrop, i, sb, (uint)sb.Capacity);
+            files[i] = sb.ToString();
+        }
+        NativeMethods.DragFinish(hDrop);
+        OnFilesDropped(new FilesDroppedEventArgs(files));
     }
 
     /// <summary>
@@ -3612,6 +3647,34 @@ public class Scintilla : Control
     // property. Otherwise ApplyResources gets called on the control before
     // the property is set, which then triggers OnHandleCreated before we
     // have the final value.
+
+    // [IEST] Campo de respaldo para la propiedad AcceptFileDrop.
+    private bool _acceptFileDrop;
+
+    /// <summary>
+    /// [IEST] Propiedad nueva — no existe en el repo oficial.
+    /// Cuando es <c>true</c>, llama a DragAcceptFiles para activar WS_EX_ACCEPTFILES
+    /// en el HWND de Scintilla, lo que permite recibir el mensaje WM_DROPFILES del
+    /// Shell de Windows al soltar ficheros desde el Explorador sobre el control.
+    /// Es compatible con <see cref="_ScintillaManagedDragDrop"/>=true porque WM_DROPFILES
+    /// y el IDropTarget de OLE son mecanismos completamente independientes del SO.
+    /// Si el handle ya existe cuando se asigna, se aplica inmediatamente.
+    /// </summary>
+    [DefaultValue(false)]
+    [Category("Behavior")]
+    [Description("[IEST] Indica si el control acepta ficheros arrastrados desde el Explorador de Windows.")]
+    public bool AcceptFileDrop
+    {
+        get => _acceptFileDrop;
+        set
+        {
+            _acceptFileDrop = value;
+            // [IEST] Si el handle ya existe se aplica de inmediato; si no,
+            // OnHandleCreated lo hará en el momento de creación de la ventana.
+            if (IsHandleCreated)
+                NativeMethods.DragAcceptFiles(Handle, value);
+        }
+    }
 
     /// <summary>
     /// Gets or sets the bi-directionality of the Scintilla control.
@@ -7333,6 +7396,31 @@ public class Scintilla : Control
         {
             base.FontChanged -= value;
         }
+    }
+
+    // [IEST] Método virtual para que subclases puedan interceptar el evento FilesDropped
+    // sin necesidad de suscribirse. Sigue el mismo patrón OnXxx que el resto del control.
+    /// <summary>
+    /// [IEST] Dispara el evento <see cref="FilesDropped"/>.
+    /// </summary>
+    protected virtual void OnFilesDropped(FilesDroppedEventArgs e)
+    {
+        if (Events[filesDroppedEventKey] is EventHandler<FilesDroppedEventArgs> handler)
+            handler(this, e);
+    }
+
+    /// <summary>
+    /// [IEST] Evento nuevo — no existe en el repo oficial de Scintilla.NET.
+    /// Se dispara cuando el usuario arrastra ficheros desde el Explorador de Windows
+    /// y los suelta sobre el control, siempre que <see cref="AcceptFileDrop"/> sea true.
+    /// No requiere AllowDrop ni interfiere con el drag-and-drop de texto nativo.
+    /// </summary>
+    [Category("Notifications")]
+    [Description("[IEST] Ocurre cuando el usuario arrastra y suelta ficheros sobre el control.")]
+    public event EventHandler<FilesDroppedEventArgs> FilesDropped
+    {
+        add    => Events.AddHandler(filesDroppedEventKey, value);
+        remove => Events.RemoveHandler(filesDroppedEventKey, value);
     }
 
     /// <summary>
