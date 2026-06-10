@@ -2160,6 +2160,18 @@ public class Scintilla : Control
             NativeMethods.DragAcceptFiles(Handle, true);
     }
 
+    // [IEST] Al destruirse el handle (ej. al cerrar un tab que contiene el control),
+    // sciPtr queda apuntando al objeto nativo Scintilla ya liberado. Si el handle
+    // se recrea después (ej. al seleccionar otro tab), SciPointer reutiliza el
+    // puntero obsoleto y la llamada a directFunction(sciPtr,...) provoca
+    // AccessViolation. Al resetear sciPtr a Zero, OnHandleCreated obtiene un
+    // nuevo puntero válido vía SCI_GETDIRECTPOINTER.
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        sciPtr = IntPtr.Zero;
+        base.OnHandleDestroyed(e);
+    }
+
     /// <summary>
     /// Raises the <see cref="HotspotClick" /> event.
     /// </summary>
