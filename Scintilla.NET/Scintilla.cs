@@ -2148,7 +2148,7 @@ public class Scintilla : Control
         // ways to solve this, but my favorite is to revoke drag and drop from the
         // native Scintilla control before base.OnHandleCreated does the standard
         // processing of AllowDrop.
-        if (!_ScintillaManagedDragDrop)
+        if (!ManagedDragDrop)
             PInvoke.RevokeDragDrop((HWND)Handle);
 
         base.OnHandleCreated(e);
@@ -3648,17 +3648,19 @@ public class Scintilla : Control
     #region Properties
 
     /// <summary>
-    /// Gets or sets whether Scintilla's native drag &amp; drop should be used instead of WinForms based one.
+    /// [IEST] Propiedad renombrada — en el repo original se llamaba <c>_ScintillaManagedDragDrop</c>
+    /// (con guion bajo para forzar orden de asignación en el Designer).
+    /// Cuando es <c>true</c>, Scintilla no revoca su registro como IDropTarget nativo en
+    /// <see cref="OnHandleCreated"/>, permitiendo el drag &amp; drop gestionado por el propio
+    /// control en lugar del mecanismo WinForms (<see cref="Control.AllowDrop"/>).
+    /// Debe establecerse antes de que se cree el handle Win32 del control.
+    /// Compatible con <see cref="AcceptFileDrop"/> porque WM_DROPFILES y el IDropTarget de OLE
+    /// son mecanismos independientes del sistema operativo.
     /// </summary>
-    /// <value><c>true</c> if Scintilla's native drag &amp; drop should be used; otherwise, <c>false</c>. The default is false.</value>
     [DefaultValue(false)]
     [Category("Behavior")]
-    [Description("Indicates whether Scintilla's native drag && drop should be used instead of WinForms based one.")]
-    public bool _ScintillaManagedDragDrop { get; set; }
-    // Underscore is used so that WinForms Designer sets it before any other
-    // property. Otherwise ApplyResources gets called on the control before
-    // the property is set, which then triggers OnHandleCreated before we
-    // have the final value.
+    [Description("[IEST] Indica si Scintilla gestiona el drag && drop de texto de forma nativa en lugar de usar el mecanismo WinForms.")]
+    public bool ManagedDragDrop { get; set; }
 
     // [IEST] Campo de respaldo para la propiedad AcceptFileDrop.
     private bool _acceptFileDrop;
@@ -3668,7 +3670,7 @@ public class Scintilla : Control
     /// Cuando es <c>true</c>, llama a DragAcceptFiles para activar WS_EX_ACCEPTFILES
     /// en el HWND de Scintilla, lo que permite recibir el mensaje WM_DROPFILES del
     /// Shell de Windows al soltar ficheros desde el Explorador sobre el control.
-    /// Es compatible con <see cref="_ScintillaManagedDragDrop"/>=true porque WM_DROPFILES
+    /// Es compatible con <see cref="ManagedDragDrop"/>=true porque WM_DROPFILES
     /// y el IDropTarget de OLE son mecanismos completamente independientes del SO.
     /// Si el handle ya existe cuando se asigna, se aplica inmediatamente.
     /// </summary>
