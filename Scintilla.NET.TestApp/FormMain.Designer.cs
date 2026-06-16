@@ -58,7 +58,7 @@
             // 
             // scintilla
             // 
-            this.scintilla._ScintillaManagedDragDrop = true;
+            this.scintilla.ManagedDragDrop = true;
             this.scintilla.BorderStyle = ScintillaNET.BorderStyle.Fixed3DVisualStyles;
             this.scintilla.CaretLineBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(232)))), ((int)(((byte)(232)))), ((int)(((byte)(255)))));
             this.scintilla.ChangeHistory = ((ScintillaNET.ChangeHistory)((ScintillaNET.ChangeHistory.Enabled | ScintillaNET.ChangeHistory.Markers)));
