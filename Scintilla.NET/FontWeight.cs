@@ -1,5 +1,8 @@
 ﻿namespace ScintillaNET;
 
+/// <summary>
+/// Specifies the font weight for a style.
+/// </summary>
 public enum FontWeight
 {
     

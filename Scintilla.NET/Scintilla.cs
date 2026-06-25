@@ -2166,6 +2166,7 @@ public class Scintilla : Control
     // puntero obsoleto y la llamada a directFunction(sciPtr,...) provoca
     // AccessViolation. Al resetear sciPtr a Zero, OnHandleCreated obtiene un
     // nuevo puntero válido vía SCI_GETDIRECTPOINTER.
+    /// <inheritdoc />
     protected override void OnHandleDestroyed(EventArgs e)
     {
         sciPtr = IntPtr.Zero;
