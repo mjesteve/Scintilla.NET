@@ -40,6 +40,7 @@
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.describeKeywordSetsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testVBScriptK3ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -140,6 +141,7 @@
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.describeKeywordSetsToolStripMenuItem,
+            this.testVBScriptK3ToolStripMenuItem,
             this.optionsToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 23);
@@ -151,7 +153,14 @@
             this.describeKeywordSetsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.describeKeywordSetsToolStripMenuItem.Text = "Describe &Keyword Sets";
             this.describeKeywordSetsToolStripMenuItem.Click += new System.EventHandler(this.describeKeywordSetsToolStripMenuItem_Click);
-            // 
+            //
+            // testVBScriptK3ToolStripMenuItem
+            //
+            this.testVBScriptK3ToolStripMenuItem.Name = "testVBScriptK3ToolStripMenuItem";
+            this.testVBScriptK3ToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.testVBScriptK3ToolStripMenuItem.Text = "Test VBScript K3 styles";
+            this.testVBScriptK3ToolStripMenuItem.Click += new System.EventHandler(this.testVBScriptK3ToolStripMenuItem_Click);
+            //
             // optionsToolStripMenuItem
             // 
             this.optionsToolStripMenuItem.Enabled = false;
@@ -247,6 +256,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testVBScriptK3ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;

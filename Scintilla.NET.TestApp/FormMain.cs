@@ -284,4 +284,71 @@ public partial class FormMain : Form
             e.SuppressKeyPress = true;
         }
     }
+
+    private void testVBScriptK3ToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        // SCE_B_* style numbers for the vbscript lexer
+        const int SCE_B_DEFAULT    = 0;
+        const int SCE_B_COMMENT    = 1;
+        const int SCE_B_NUMBER     = 2;
+        const int SCE_B_KEYWORD    = 3;
+        const int SCE_B_STRING     = 4;
+        const int SCE_B_OPERATOR   = 6;
+        const int SCE_B_IDENTIFIER = 7;
+        const int SCE_B_KEYWORD2   = 10;
+        const int SCE_B_KEYWORD3   = 11;
+        const int SCE_B_KEYWORD4   = 12;
+
+        string StyleName(int s) => s switch
+        {
+            SCE_B_DEFAULT    => "DEFAULT(0)",
+            SCE_B_COMMENT    => "COMMENT(1)",
+            SCE_B_NUMBER     => "NUMBER(2)",
+            SCE_B_KEYWORD    => "KEYWORD(3)",
+            SCE_B_STRING     => "STRING(4)",
+            SCE_B_OPERATOR   => "OPERATOR(6)",
+            SCE_B_IDENTIFIER => "IDENTIFIER(7)",
+            SCE_B_KEYWORD2   => "KEYWORD2(10)",
+            SCE_B_KEYWORD3   => "KEYWORD3(11)",
+            SCE_B_KEYWORD4   => "KEYWORD4(12)",
+            _                => $"STYLE({s})"
+        };
+
+        scintilla.LexerName = "vbscript";
+        scintilla.StyleClearAll();
+
+        // Keyword3 = slot 2 = Bold
+        scintilla.Styles[SCE_B_KEYWORD3].Bold = true;
+        scintilla.Styles[SCE_B_KEYWORD3].ForeColor = Color.DarkGreen;
+
+        // Put clsgincum in slot 2 (keyword3)
+        scintilla.SetKeywords(0, "set nothing dim");
+        scintilla.SetKeywords(1, "");
+        scintilla.SetKeywords(2, "clsgincum miDic");
+        scintilla.SetKeywords(3, "");
+
+        // Three test cases: before space, before dot, before paren
+        string testCode =
+            "Set clsgIncum = Nothing\r\n" +
+            "clsgIncum.Resetear\r\n" +
+            "miDic(\"clave\")\r\n";
+
+        scintilla.Text = testCode;
+        scintilla.Colorize(0, scintilla.TextLength);
+
+        // Read styles char by char and build report
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Lexilla v{scintilla.LexillaVersion}  |  keyword slot 2 = \"clsgincum miDic\"");
+        sb.AppendLine(new string('-', 60));
+
+        for (int i = 0; i < scintilla.TextLength; i++)
+        {
+            char ch = scintilla.Text[i];
+            if (ch == '\r' || ch == '\n') continue;
+            int style = scintilla.GetStyleAt(i);
+            sb.AppendLine($"  [{i,3}] '{ch}'  ->  {StyleName(style)}{(style == SCE_B_KEYWORD3 ? "  <<< BOLD" : "")}");
+        }
+
+        MessageBox.Show(sb.ToString(), "VBScript K3 style test", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
 }
