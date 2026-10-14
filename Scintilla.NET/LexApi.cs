@@ -5,7 +5,7 @@ namespace ScintillaNET;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-public static class LexApi
+internal static class LexApi
 {
     public delegate IntPtr LexerFactoryFunction();
     
@@ -882,7 +882,7 @@ public static class LexApi
     public const int SCE_ASM_EXTINSTRUCTION = 14;
     public const int SCE_ASM_COMMENTDIRECTIVE = 15;
     public const int SCE_ASM_STRINGBACKQUOTE = 16;
-    
+
     // Fortran
     // F77
     // =======
@@ -1787,7 +1787,7 @@ public static class LexApi
     public const int SCE_PAS_OPERATOR = 13;
     public const int SCE_PAS_ASM = 14;
     public const int SCE_PAS_MULTILINESTRING = 15;
-    
+
     // SORCUS
     // ======
     public const int SCE_SORCUS_DEFAULT = 0;

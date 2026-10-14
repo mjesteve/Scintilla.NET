@@ -1,6 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="Scintilla.NET-Common.targets" />
+
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="EmbeddedNatives\x86\Scintilla.dll.gz"
+                      LogicalName="ScintillaNET.x86.Scintilla.dll.gz" />
+    <EmbeddedResource Include="EmbeddedNatives\x86\Lexilla.dll.gz"
+                      LogicalName="ScintillaNET.x86.Lexilla.dll.gz" />
+    <EmbeddedResource Include="EmbeddedNatives\x64\Scintilla.dll.gz"
+                      LogicalName="ScintillaNET.x64.Scintilla.dll.gz" />
+    <EmbeddedResource Include="EmbeddedNatives\x64\Lexilla.dll.gz"
+                      LogicalName="ScintillaNET.x64.Lexilla.dll.gz" />
   </ItemGroup>
 </Project>

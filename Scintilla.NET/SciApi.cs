@@ -6,7 +6,7 @@ namespace ScintillaNET;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-public static class SciApi
+internal static class SciApi
 {
     public delegate IntPtr Scintilla_DirectFunction(IntPtr ptr, int iMessage, IntPtr wParam, IntPtr lParam);
     
@@ -392,7 +392,7 @@ public static class SciApi
     public const int SCTD_LONGARROW = 0;
     public const int SCTD_STRIKEOUT = 1;
     public const int SCTD_CONTROLCHAR = 2;
-    
+
     /// <summary>
     /// <code>get TabDrawMode GetTabDrawMode=2698(, )</code>
     /// Retrieve the current tab draw mode.
@@ -5908,7 +5908,7 @@ public static class SciApi
     public const uint SC_UPDATE_H_SCROLL = 0x8;
     public const uint SC_UPDATE_TEXT = 0x10;
     public const uint SC_UPDATE_LINE_COUNT = 0x20;
-    
+
     // FocusChange
     // ===========
     public const int SCEN_CHANGE = 768;
@@ -6125,24 +6125,24 @@ public static class SciApi
     /// <code>evt void AutoCSelectionChange=2032(int listType, string text, int position)</code>
     /// </summary>
     public const int SCN_AUTOCSELECTIONCHANGE = 2032;
-    
+
     // ScaleTechnique
     // ==============
     public const int SCALE_TECHNIQUE_DEFAULT = 0;
     public const int SCALE_TECHNIQUE_PIXEL_ALIGNED = 1;
-    
+
     /// <summary>
     /// <code>set void SetScaleTechnique=2820(ScaleTechnique technique, )</code>
     /// Set the scale technique
     /// </summary>
     public const int SCI_SETSCALETECHNIQUE = 2820;
-    
+
     /// <summary>
     /// <code>get ScaleTechnique GetScaleTechnique=2821(, )</code>
     /// Get the scale technique
     /// </summary>
     public const int SCI_GETSCALETECHNIQUE = 2821;
-    
+
     // Bidirectional
     // =============
     public const int SC_BIDIRECTIONAL_DISABLED = 0;

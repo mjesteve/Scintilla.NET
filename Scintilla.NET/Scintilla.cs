@@ -6,9 +6,13 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 using Windows.Win32;
@@ -75,6 +79,19 @@ public class Scintilla : Control
     }
 
     /// <summary>
+    /// Establece la ruta al directorio que contiene las DLLs nativas de Scintilla
+    /// (<c>Scintilla.dll</c> y <c>Lexilla.dll</c>).
+    /// Equivalente a asignar <see cref="ScintillaNativeLibrary.SatelliteDirectory" />.
+    /// Debe llamarse antes de usar el control <see cref="Scintilla" /> por primera vez.
+    /// </summary>
+    /// <param name="modulePath">Ruta absoluta al directorio que contiene las DLLs nativas.</param>
+    [Obsolete("Usar ScintillaNativeLibrary.SatelliteDirectory directamente.")]
+    public static void SetModulePath(string modulePath)
+    {
+        ScintillaNativeLibrary.SatelliteDirectory = modulePath;
+    }
+
+    /// <summary>
     /// Enumerates a list of folder paths that the native satellite libraries
     /// ('Scintilla.dll' &amp; 'Lexilla.dll') are searched in.
     /// </summary>
@@ -84,6 +101,13 @@ public class Scintilla : Control
         if (!string.IsNullOrWhiteSpace(ScintillaNativeLibrary.SatelliteDirectory))
         {
             yield return ScintillaNativeLibrary.SatelliteDirectory;
+        }
+
+        // 1.b Embedded native libraries extracted to temp folder
+        string embeddedSatellitePath = GetEmbeddedSatelliteDirectory();
+        if (!string.IsNullOrWhiteSpace(embeddedSatellitePath))
+        {
+            yield return embeddedSatellitePath;
         }
 
         // 2. check run-time paths
@@ -145,6 +169,162 @@ public class Scintilla : Control
         {
             yield return x64CustomPath;
         }
+    }
+
+    // IEST. This is a bit of a hack to allow us to embed the native DLLs as resources and extract them at runtime if needed.
+    // need to do this because in some environments (notably the VS designer) we can't rely on the native DLLs being in the
+    // same directory as the managed assembly or in any of the other usual probing paths.
+    // By embedding the native DLLs as resources, we can ensure that they are always available to be extracted and loaded at runtime,
+    // regardless of the environment.
+    private static string embeddedSatelliteDirectory;
+
+    /// <summary>
+    /// Enumerates a list of folder paths that the native satellite libraries
+    /// ('Scintilla.dll' &amp; 'Lexilla.dll') are searched in.
+    /// </summary>
+    private static string GetEmbeddedSatelliteDirectory()
+    {
+        if (embeddedSatelliteDirectory != null)
+            return embeddedSatelliteDirectory;
+
+        string version = typeof(Scintilla).Assembly.GetName().Version.ToString(3);
+        string arch = IntPtr.Size == 4 ? "x86" : "x64";
+
+        string baseDirectory = Path.Combine(
+            Path.GetTempPath(),
+            "ScintillaNET",
+            version,
+            arch);
+
+        string scintillaPath = Path.Combine(baseDirectory, "Scintilla.dll");
+        string lexillaPath = Path.Combine(baseDirectory, "Lexilla.dll");
+
+        string mutexName = GetGlobalMutexName();
+
+        using (var mutex = new Mutex(false, mutexName))
+        {
+            bool ownsHandle = false;
+
+            try
+            {
+                try
+                {
+                    ownsHandle = mutex.WaitOne(5000, false);
+                    if (!ownsHandle)
+                        throw new TimeoutException("Timeout waiting for exclusive access to Scintilla native libraries.");
+                }
+                catch (AbandonedMutexException)
+                {
+                    ownsHandle = true;
+                }
+
+                if (!Directory.Exists(baseDirectory))
+                    Directory.CreateDirectory(baseDirectory);
+
+                ExtractEmbeddedNativeIfNeeded("Scintilla.dll", scintillaPath, arch);
+                ExtractEmbeddedNativeIfNeeded("Lexilla.dll", lexillaPath, arch);
+            }
+            finally
+            {
+                if (ownsHandle)
+                    mutex.ReleaseMutex();
+            }
+        }
+
+        embeddedSatelliteDirectory = baseDirectory;
+        return embeddedSatelliteDirectory;
+    }
+
+    private static void ExtractEmbeddedNativeIfNeeded(string fileName, string targetPath, string arch)
+    {
+        string resourceName = string.Format(
+            CultureInfo.InvariantCulture,
+            "ScintillaNET.{0}.{1}.gz",
+            arch,
+            fileName);
+
+        string existingVersion = GetDllVersion(targetPath);
+        string embeddedVersion = GetEmbeddedDllVersion(resourceName);
+
+        bool needReplace =
+            !File.Exists(targetPath) ||
+            string.IsNullOrWhiteSpace(existingVersion) ||
+            existingVersion != embeddedVersion;
+
+        if (!needReplace)
+            return;
+
+        using (Stream resourceStream = typeof(Scintilla).Assembly.GetManifestResourceStream(resourceName))
+        {
+            if (resourceStream == null)
+                throw new FileNotFoundException("Embedded native resource not found: " + resourceName);
+
+            using (var gzipStream = new GZipStream(resourceStream, CompressionMode.Decompress))
+            using (var fileStream = File.Create(targetPath))
+            {
+                gzipStream.CopyTo(fileStream);
+            }
+        }
+    }
+
+    private static string GetDllVersion(string path)
+    {
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            FileVersionInfo info = FileVersionInfo.GetVersionInfo(path);
+            return info.ProductVersion ?? info.FileVersion;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string GetEmbeddedDllVersion(string resourceName)
+    {
+        string tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll");
+
+        try
+        {
+            using (Stream resourceStream = typeof(Scintilla).Assembly.GetManifestResourceStream(resourceName))
+            {
+                if (resourceStream == null)
+                    return null;
+
+                using (var gzipStream = new GZipStream(resourceStream, CompressionMode.Decompress))
+                using (var fileStream = File.Create(tempFile))
+                {
+                    gzipStream.CopyTo(fileStream);
+                }
+            }
+
+            FileVersionInfo info = FileVersionInfo.GetVersionInfo(tempFile);
+            return info.ProductVersion ?? info.FileVersion;
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(tempFile))
+                    File.Delete(tempFile);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    private static string GetGlobalMutexName()
+    {
+        string guid = typeof(Scintilla).Assembly.GetCustomAttribute<GuidAttribute>()?.Value;
+
+        if (string.IsNullOrWhiteSpace(guid))
+            guid = "ScintillaNET.NativeExtraction";
+
+        return string.Format(CultureInfo.InvariantCulture, "Global\\{{{0}}}", guid);
     }
 
     #region Fields
@@ -1074,6 +1254,16 @@ public class Scintilla : Control
     public void EndUndoAction()
     {
         DirectMessage(SciApi.SCI_ENDUNDOACTION);
+    }
+
+    /// <summary>
+    /// Activa o desactiva el almacenado del historial de acciones deshacer.
+    /// </summary>
+    /// <param name="activar">true para activar la recopilación de acciones deshacer; false para desactivarla.</param>
+    public void UndoActivo(bool activar)
+    {
+        var val = (activar ? new IntPtr(1) : IntPtr.Zero);
+        DirectMessage(SciApi.SCI_SETUNDOCOLLECTION, val);
     }
 
     /// <summary>
@@ -7281,6 +7471,31 @@ public class Scintilla : Control
         }
     }
 
+    // [IEST] Método virtual para que subclases puedan interceptar el evento FilesDropped
+    // sin necesidad de suscribirse. Sigue el mismo patrón OnXxx que el resto del control.
+    /// <summary>
+    /// [IEST] Dispara el evento <see cref="FilesDropped"/>.
+    /// </summary>
+    protected virtual void OnFilesDropped(FilesDroppedEventArgs e)
+    {
+        if (Events[filesDroppedEventKey] is EventHandler<FilesDroppedEventArgs> handler)
+            handler(this, e);
+    }
+
+    /// <summary>
+    /// [IEST] Evento nuevo — no existe en el repo oficial de Scintilla.NET.
+    /// Se dispara cuando el usuario arrastra ficheros desde el Explorador de Windows
+    /// y los suelta sobre el control, siempre que <see cref="AcceptFileDrop"/> sea true.
+    /// No requiere AllowDrop ni interfiere con el drag-and-drop de texto nativo.
+    /// </summary>
+    [Category("Notifications")]
+    [Description("[IEST] Ocurre cuando el usuario arrastra y suelta ficheros sobre el control.")]
+    public event EventHandler<FilesDroppedEventArgs> FilesDropped
+    {
+        add    => Events.AddHandler(filesDroppedEventKey, value);
+        remove => Events.RemoveHandler(filesDroppedEventKey, value);
+    }
+
     /// <summary>
     /// Not supported.
     /// </summary>
@@ -7398,31 +7613,6 @@ public class Scintilla : Control
         {
             base.FontChanged -= value;
         }
-    }
-
-    // [IEST] Método virtual para que subclases puedan interceptar el evento FilesDropped
-    // sin necesidad de suscribirse. Sigue el mismo patrón OnXxx que el resto del control.
-    /// <summary>
-    /// [IEST] Dispara el evento <see cref="FilesDropped"/>.
-    /// </summary>
-    protected virtual void OnFilesDropped(FilesDroppedEventArgs e)
-    {
-        if (Events[filesDroppedEventKey] is EventHandler<FilesDroppedEventArgs> handler)
-            handler(this, e);
-    }
-
-    /// <summary>
-    /// [IEST] Evento nuevo — no existe en el repo oficial de Scintilla.NET.
-    /// Se dispara cuando el usuario arrastra ficheros desde el Explorador de Windows
-    /// y los suelta sobre el control, siempre que <see cref="AcceptFileDrop"/> sea true.
-    /// No requiere AllowDrop ni interfiere con el drag-and-drop de texto nativo.
-    /// </summary>
-    [Category("Notifications")]
-    [Description("[IEST] Ocurre cuando el usuario arrastra y suelta ficheros sobre el control.")]
-    public event EventHandler<FilesDroppedEventArgs> FilesDropped
-    {
-        add    => Events.AddHandler(filesDroppedEventKey, value);
-        remove => Events.RemoveHandler(filesDroppedEventKey, value);
     }
 
     /// <summary>

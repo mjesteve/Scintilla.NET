@@ -27,6 +27,10 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
+
+# Excepcion IEST: EmbeddedNatives/{x64,x86} son binarios versionados (recursos embebidos), no build output
+!Scintilla.NET/EmbeddedNatives/x64/
+!Scintilla.NET/EmbeddedNatives/x86/
 [Bb]in/
 [Oo]bj/
 [Ll]og/

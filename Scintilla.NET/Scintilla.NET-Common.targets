@@ -1,7 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <ProjectGuid>{22AE2386-60F1-476E-9303-61CDB0AAC4CF}</ProjectGuid>
-    <TargetFrameworks>net462;net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Description>Source Editing Component based on Scintilla 5 series.</Description>
     <Copyright>Copyright (c) Jacob Slusser 2018, VPKSoft, cyber960 2022, desjarlais 2023, Ahmet Sait 2025</Copyright>
@@ -63,11 +63,19 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="runtimes\**">
+    <!--
+	<Content Include="runtimes\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes</PackagePath>
       <Pack>true</Pack>
     </Content>
+	-->
+	<Content Include="runtimes\**\*.*">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		<PackagePath>runtimes</PackagePath>
+		<Pack>true</Pack>
+	</Content>
     <Compile Update="LexApi.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -87,6 +95,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
     <Reference Include="System.Design" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ApiToolkit\ApiToolkit.csproj">
