@@ -31,6 +31,24 @@ bld/
 # Excepcion IEST: EmbeddedNatives/{x64,x86} son binarios versionados (recursos embebidos), no build output
 !Scintilla.NET/EmbeddedNatives/x64/
 !Scintilla.NET/EmbeddedNatives/x86/
+
+# IEST: tras fusionar este fork en la raiz de Scintilla.Net.IEST (dentro de W+ConfigTools),
+# estas carpetas/ficheros conviven ahi pero NO son parte de este fork — son meta-documentacion
+# y clones propios con su propio .git (lexilla/, scintilla/). No trackear desde aqui.
+/lexilla/
+/scintilla/
+/AGENTS.md
+/ActualizarDLLsNativas.md
+/BuildAndDeployLexilla.ps1
+/CHANGELOG.md
+/IMPLEMENTACION_Migracion scintilla5.md
+/ScintillaNET_Diseno_Carga_Nativos.md
+/ScintillaDif.TestApp/
+/ScintillaDiff/
+/ScintillaDiffer.sln
+/AutocompleteMenu/
+/.claude/
+/docs/Actualizacion-upstream-ScintillaNET-20261012.md
 [Bb]in/
 [Oo]bj/
 [Ll]og/
